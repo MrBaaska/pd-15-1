@@ -29,16 +29,16 @@
   html,body{height:100%;}
   body{
     margin:0;
+    min-height:100dvh;
     background:var(--bg-0);
     color:var(--text-hi);
     font-family:'Inter',system-ui,sans-serif;
-    min-height:100vh;
-    overflow-y:auto;
-    overflow-x:hidden;
+    overflow:auto;
   }
 
   /* ---------- header ---------- */
   header{
+    flex:0 0 auto;
     background:var(--bg-1);
     border-bottom:1px solid var(--line);
     padding:18px 28px 0;
@@ -125,17 +125,19 @@
 
   /* ---------- table area ---------- */
   main{
+    min-height:0;
+    overflow:visible;
     padding:0 28px 28px;
     background:var(--bg-0);
-    overflow:visible;
+    display:block;
   }
   .table-wrap{
     margin-top:16px;
     border:1px solid var(--line);
     border-radius:8px;
     overflow:auto;
-    height:62vh;
-    min-height:420px;
+    min-height:360px;
+    max-height:clamp(360px,62dvh,960px);
   }
   .summary-board{
     margin-top:16px;
@@ -186,11 +188,11 @@
     color:var(--text-mid);
     letter-spacing:.25px;
   }
-  .summary-card.profile{grid-column:span 6;}
-  .summary-card.mark{grid-column:span 3;}
-  .summary-card.direction{grid-column:span 3;}
-  .summary-card.design{grid-column:span 6;}
-  .summary-card.operation{grid-column:span 6;}
+  .summary-card.profile{grid-column:1 / span 6;}
+  .summary-card.mark{grid-column:7 / span 3;}
+  .summary-card.direction{grid-column:10 / span 3;}
+  .summary-card.design{grid-column:1 / span 6;}
+  .summary-card.operation{grid-column:7 / -1;}
   .bar-list{
     display:flex;
     flex-direction:column;
@@ -240,6 +242,7 @@
     width:100%;
     min-width:1500px;
     font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
   }
   thead th:last-child,
   tbody td:last-child{
@@ -258,7 +261,7 @@
     text-transform:none;
     border:1px solid var(--line-soft);
     padding:7px 8px;
-    font-size:11.5px;
+    font-size:12.5px;
     white-space:nowrap;
   }
   thead tr:nth-child(5) th{
@@ -297,7 +300,7 @@
     outline:none;
     width:100%;
     height:100%;
-    padding:7px 6px;
+    padding:9px 6px;
     text-align:center;
     font:inherit;
     color:inherit;
@@ -308,7 +311,7 @@
     outline:none;
     width:100%;
     height:100%;
-    padding:7px 10px;
+    padding:9px 10px;
     text-align:center;
     text-align-last:center;
     font:inherit;
@@ -346,30 +349,34 @@
   }
   .del-btn:hover{color:var(--red);background:var(--red-dim);}
 
-  @media (min-width:1600px){
+  @media (max-width:1200px){
     .table-wrap{
-      height:68vh;
-      min-height:500px;
+      min-height:300px;
+      max-height:58dvh;
     }
   }
 
-  @media (max-width:1200px){
+  @media (max-width:980px){
+    .summary-top{grid-column:1 / -1;grid-row:1;}
+    .summary-card.profile{grid-column:1 / span 6;grid-row:2;}
+    .summary-card.design{grid-column:1 / span 6;grid-row:3;}
+    .summary-card.mark{grid-column:7 / -1;grid-row:2;}
+    .summary-card.direction{grid-column:7 / -1;grid-row:3;}
+    .summary-card.operation{grid-column:7 / -1;grid-row:4;}
+  }
+
+  @media (max-width:760px){
     .summary-card.profile,
     .summary-card.mark,
     .summary-card.direction,
     .summary-card.design,
     .summary-card.operation{grid-column:1/-1;}
-
-    .table-wrap{
-      height:54vh;
-      min-height:340px;
-    }
   }
 
-  .table-wrap::-webkit-scrollbar{height:10px;width:10px;}
-  .table-wrap::-webkit-scrollbar-track{background:var(--bg-0);}
-  .table-wrap::-webkit-scrollbar-thumb{background:var(--line);border-radius:5px;}
-  .table-wrap::-webkit-scrollbar-thumb:hover{background:var(--rail);}
+  main::-webkit-scrollbar{height:10px;width:10px;}
+  main::-webkit-scrollbar-track{background:var(--bg-0);}
+  main::-webkit-scrollbar-thumb{background:var(--line);border-radius:5px;}
+  main::-webkit-scrollbar-thumb:hover{background:var(--rail);}
 </style>
 </head>
 <body>
@@ -501,50 +508,20 @@
   const WEAR_COLS = new Set([13,14,15,16,17,18,19,20,21,22,23,24,25]);
 
   function normalizeRowShape(row){
-    const src = Array.isArray(row) ? [...row] : [];
-    const isOperation = (v)=> v === 'Цах' || v === 'Мех';
-
-    // Legacy 24-column schema:
-    // [station, route, switchNo, railProfile, year, mark, fastening, design, direction, tieCount, operation, wear(13)]
-    // Canonical schema used by this table is 26 columns:
-    // metadata [0..12] + wear [13..25]
-    if(src.length === 24){
-      return [
-        src[0] || '',
-        src[2] || '',
-        src[1] || '',
-        '',
-        src[3] || '',
-        src[8] || '',
-        '',
-        src[4] || '',
-        src[5] || '',
-        src[6] || '',
-        src[7] || '',
-        src[9] || '',
-        src[10] || '',
-        ...src.slice(11, 24)
+    let normalized = row.length === 25 ? [...row.slice(0, 11), ...row.slice(12)] : [...row];
+    if(normalized.length === 29){
+      normalized = [...normalized.slice(0, 7), ...normalized.slice(9)];
+    }
+    if(normalized.length === 27){
+      normalized = [...normalized.slice(0, 11), ...normalized.slice(12)];
+    }
+    if(normalized.length === 24){
+      normalized = [
+        ...normalized.slice(0, 4),
+        '', '', '',
+        ...normalized.slice(4)
       ];
     }
-
-    let normalized = [...src];
-
-    // Rows saved by previous buggy mapping: 27 cols with blank at [11], tie at [12], op at [13].
-    if(normalized.length === 27 && normalized[11] === '' && isOperation(normalized[13])){
-      normalized.splice(11, 1);
-    }
-
-    // If operation slid into tie column, restore missing tie-count cell.
-    if(isOperation(normalized[11]) && !isOperation(normalized[12])){
-      normalized.splice(11, 0, '');
-    }
-
-    if(normalized.length < 26){
-      normalized = [...normalized, ...new Array(26 - normalized.length).fill('')];
-    } else if(normalized.length > 26){
-      normalized = normalized.slice(0, 26);
-    }
-
     return normalized;
   }
 
