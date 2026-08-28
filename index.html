@@ -567,6 +567,20 @@
       display: flex;
       flex-direction: column;
       box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
+      transition: all 0.25s ease;
+    }
+    .content-frame-wrap.is-fullscreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 3000;
+      border-radius: 0;
+      border: none;
+      box-shadow: none;
     }
     .frame-titlebar {
       display: flex;
@@ -578,6 +592,25 @@
       font-size: 13px;
       color: var(--text-muted);
       min-height: 54px;
+    }
+    .frame-fullscreen-btn {
+      margin-left: auto;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid var(--border-glow);
+      color: var(--accent);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .frame-fullscreen-btn:hover {
+      background: rgba(0, 212, 255, 0.25);
+      color: #fff;
     }
     .frame-dot {
       width: 9px; height: 9px;
@@ -940,6 +973,18 @@
 
       <div class="sidebar-divider"></div>
 
+<div class="sidebar-item">
+        <a href="#" class="sidebar-link danger-link" id="ajliin-burtgel-link" data-page-key="Ажлын бүртгэл">
+          <i class="fa fa-sitemap"></i> Ажлын бүртгэл
+        </a>
+      </div>
+
+      <div class="sidebar-item">
+        <a href="#" class="sidebar-link danger-link" id="hural-link" data-page-key="Хурлын тэмдэглэл">
+          <i class="fa fa-sitemap"></i> Хурлын тэмдэглэл
+        </a>
+      </div>
+
       <div class="sidebar-item">
         <a href="#" class="sidebar-link danger-link" id="toggle-alert" data-page-key="Менежментийн нэгдсэн тогтолцоо">
           <i class="fa fa-sitemap"></i> Менежментийн нэгдсэн тогтолцоо
@@ -997,6 +1042,9 @@
           <div class="frame-dot" style="background:#ffbd2e"></div>
           <div class="frame-dot" style="background:#27c93f"></div>
           <span id="frame-title-label" style="margin-left:8px; font-family:'Share Tech Mono',monospace; font-size:11px;">ХЭСГИЙН ТАНИЛЦУУЛГА</span>
+          <button id="frame-fullscreen-btn" class="frame-fullscreen-btn" type="button" title="Дэлгэц дүүргэх / Багасгах">
+            <i class="fa fa-expand"></i> <span>Дэлгэц дүүргэх</span>
+          </button>
         </div>
         <iframe id="content-frame" src="./heseg.html" frameborder="0" allow="camera *; microphone *; autoplay *; clipboard-write *; encrypted-media *; gyroscope *; picture-in-picture *; fullscreen *"></iframe>
       </div>
@@ -1212,6 +1260,8 @@
     'Төлөвлөгөө / Сарын ажлын төлөвлөгөө': 'sariin.html',
     'Шийдвэр': 'shiidwer.html',
     'Үүрэг даалгавар': 'ita.html',
+    'Ажлын бүртгэл': 'ajliinBvrtgel.html',
+    'Хурлын тэмдэглэл': 'hural.html',
     'Менежментийн нэгдсэн тогтолцоо': 'anhaar.html',
     'Ажилтануудын мэдээлэл': 'ajiltan.html',
     'Суман шилжүүлгийн бүртгэл': 'sum.html',
@@ -1600,13 +1650,12 @@
     document.querySelectorAll('.sidebar-link.active').forEach(function(link) {
       link.classList.remove('active');
     });
-    const alertLink = document.getElementById('toggle-alert');
-    if (alertLink) {
-      alertLink.classList.remove('active-alert');
-    }
+    document.querySelectorAll('.sidebar-link.active-alert').forEach(function(link) {
+      link.classList.remove('active-alert');
+    });
     if (activeLink && activeLink.classList.contains('sidebar-link')) {
       activeLink.classList.add('active');
-      if (activeLink.id === 'toggle-alert') {
+      if (activeLink.classList.contains('danger-link')) {
         activeLink.classList.add('active-alert');
       }
     }
@@ -1616,6 +1665,35 @@
     document.querySelectorAll('.nav-links > li').forEach(function(item) {
       item.classList.remove('open');
     });
+  }
+
+  const fullscreenPages = ['Ажлын бүртгэл', 'Хурлын тэмдэглэл'];
+
+  function setFrameFullscreen(enable) {
+    const wrap = document.querySelector('.content-frame-wrap');
+    const btn = document.getElementById('frame-fullscreen-btn');
+    if (!wrap) return;
+    if (enable) {
+      wrap.classList.add('is-fullscreen');
+      if (btn) {
+        btn.innerHTML = '<i class="fa fa-compress"></i> <span>Хураах</span>';
+      }
+    } else {
+      wrap.classList.remove('is-fullscreen');
+      if (btn) {
+        btn.innerHTML = '<i class="fa fa-expand"></i> <span>Дэлгэц дүүргэх</span>';
+      }
+    }
+    const frame = document.getElementById('content-frame');
+    if (frame) {
+      syncFrameSize(frame);
+    }
+  }
+
+  function toggleFrameFullscreen() {
+    const wrap = document.querySelector('.content-frame-wrap');
+    const isFS = wrap && wrap.classList.contains('is-fullscreen');
+    setFrameFullscreen(!isFS);
   }
 
   function loadFramePage(pageKey, clickedElement) {
@@ -1631,6 +1709,11 @@
     closeTopNavMenus();
     if (window.matchMedia('(max-width: 1024px)').matches) {
       closeSidebar();
+    }
+    if (fullscreenPages.includes(pageKey)) {
+      setFrameFullscreen(true);
+    } else {
+      setFrameFullscreen(false);
     }
   }
 
@@ -1665,9 +1748,15 @@
       editModeButton.addEventListener('click', handleEditModeButton);
     }
 
+    const fsBtn = document.getElementById('frame-fullscreen-btn');
+    if (fsBtn) {
+      fsBtn.addEventListener('click', toggleFrameFullscreen);
+    }
+
     document.addEventListener('keydown', function(event) {
       if (event.key === 'Escape') {
         closeSidebar();
+        setFrameFullscreen(false);
       }
     });
 
